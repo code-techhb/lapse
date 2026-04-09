@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "LAPSE...Browsing Time",
+  "version": "1.0.0",
+  "description": "Be aware of where your time goes. LAPSE shows you exactly where your hours go online so you can browse with intention",
+
+  "permissions": ["tabs", "storage", "alarms", "windows"],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "action": {
+    "default_popup": "./pop-up/popup.html",
+    "default_title": "Click to view your browsing time"
+  }
+}

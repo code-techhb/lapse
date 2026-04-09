@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LAPSE...Browsing Time</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+
+  <body>
+    <header class="header">
+      <span class="title">LAPSE...Time Tracker</span>
+      <span class="cursor">▋</span>
+    </header>
+
+    <main>
+      <div class="tabs">
+        <button class="tab active" data-range="day">DAY</button>
+        <button class="tab" data-range="week">WEEK</button>
+        <button class="tab" data-range="month">MONTH</button>
+        <button class="tab" data-range="year">YEAR</button>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="chart"></canvas>
+        <div class="chart-total" id="totalTime">0m</div>
+      </div>
+
+      <div class="site-list" id="siteList"></div>
+    </main>
+
+    <footer class="footer">
+      <button class="btn-download" id="downloadBtn">⬇ EXPORT</button>
+      <button class="btn-clear" id="clearBtn">🚮 CLEAR</button>
+    </footer>
+
+    <script src="chart.umd.min.js"></script>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>
