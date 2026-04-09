@@ -106,6 +106,10 @@ chrome.idle.onStateChanged.addListener(async (state) => {
   }
 });
 
+chrome.runtime.onSuspend.addListener(async () => {
+  await saveSession();
+});
+
 // init
 scheduleMidnightAlarm();
 chrome.idle.setDetectionInterval(180);
