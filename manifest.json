@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Be aware of where your time goes. LAPSE shows you exactly where your hours go online so you can browse with intention",
 
-  "permissions": ["tabs", "storage", "alarms", "windows"],
+  "permissions": ["tabs", "storage", "alarms", "windows", "idle"],
 
   "background": {
     "service_worker": "background.js",
