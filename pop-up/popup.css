@@ -204,3 +204,14 @@ canvas {
   color: #f87171;
   border-color: #f87171;
 }
+
+.footer-note {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 500;
+  font-size: 9px;
+  color: #4a5568;
+  text-align: center;
+  padding: 4px 12px 8px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}

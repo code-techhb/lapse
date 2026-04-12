@@ -5,12 +5,18 @@ import {
   getMonthData,
   getYearData,
   formatTime,
+  downloadFormatTime,
+  todayKey,
 } from "../utils/time.js";
 
 const COLORS = [
   "#4ade80",
   "#f472b6",
-  "#fb923c",
+  "#6367FF",
+  "#f59c53",
+  "#F5CBCB",
+  "#e75a5a",
+  "#E4FF30",
   "#facc15",
   "#60a5fa",
   "#c084fc",
@@ -23,12 +29,32 @@ const COLORS = [
   "#B8DB80",
   "#F875AA",
   "#EDA35A",
+  "#FFDE42",
+  "#fca4a4",
 ];
 
+let totalMs = 0;
 let currentRange = "day";
 let chartInstance = null;
 
 // helper functions
+async function getLiveSession() {
+  try {
+    return await chrome.runtime.sendMessage({ type: "GET_LIVE_SESSION" });
+  } catch {
+    return {};
+  }
+}
+
+function mergeLive(data, live) {
+  if (!live || !Object.keys(live).length) return data;
+  const merged = { ...data };
+  for (const [host, ms] of Object.entries(live)) {
+    merged[host] = (merged[host] || 0) + ms;
+  }
+  return merged;
+}
+
 function renderChart(sites) {
   const labels = sites.map(([hostname]) => hostname);
   const values = sites.map(([, ms]) => ms);
@@ -37,6 +63,15 @@ function renderChart(sites) {
   if (chartInstance) chartInstance.destroy();
 
   const ctx = document.getElementById("chart").getContext("2d");
+
+  Chart.Tooltip.positioners.outside = function (elements) {
+    if (!elements.length) return false;
+    const arc = elements[0].element;
+    const angle = (arc.startAngle + arc.endAngle) / 2;
+    const x = arc.x + Math.cos(angle) * (arc.outerRadius + 36);
+    const y = arc.y + Math.sin(angle) * (arc.outerRadius + 36);
+    return { x, y };
+  };
 
   chartInstance = new Chart(ctx, {
     type: "doughnut",
@@ -59,8 +94,13 @@ function renderChart(sites) {
       plugins: {
         legend: { display: false },
         tooltip: {
+          position: "outside",
           callbacks: {
-            label: (item) => ` ${formatTime(item.raw)}`,
+            label: (item) => {
+              const pct =
+                totalMs > 0 ? ((item.raw / totalMs) * 100).toFixed(1) : 0;
+              return ` ${pct}%`;
+            },
           },
         },
       },
@@ -92,17 +132,19 @@ function renderList(sites) {
 // main
 async function render() {
   const timeData = await getAllTimeData();
+  const live = await getLiveSession();
 
   let data;
-  if (currentRange === "day") data = getDayData(timeData);
-  else if (currentRange === "week") data = getWeekData(timeData);
-  else if (currentRange === "month") data = getMonthData(timeData);
-  else data = getYearData(timeData);
+  if (currentRange === "day") data = mergeLive(getDayData(timeData), live);
+  else if (currentRange === "week")
+    data = mergeLive(getWeekData(timeData), live);
+  else if (currentRange === "month")
+    data = mergeLive(getMonthData(timeData), live);
+  else data = mergeLive(getYearData(timeData), live);
 
   const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
-  const total = sorted.reduce((sum, [, ms]) => sum + ms, 0);
-
-  document.getElementById("totalTime").textContent = formatTime(total);
+  totalMs = sorted.reduce((sum, [, ms]) => sum + ms, 0);
+  document.getElementById("totalTime").textContent = formatTime(totalMs);
 
   renderChart(sorted);
   renderList(sorted);
@@ -122,12 +164,44 @@ document.querySelectorAll(".tab").forEach((tab) => {
 
 document.getElementById("downloadBtn").addEventListener("click", async () => {
   const timeData = await getAllTimeData();
-  const json = JSON.stringify(timeData, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
+  const live = await getLiveSession();
+  const today = todayKey();
+
+  let data, label, filename;
+
+  if (currentRange === "day") {
+    data = mergeLive(getDayData(timeData), live);
+    label = `Daily · ${today}`;
+    filename = `LAPSE-daily-${today}.csv`;
+  } else if (currentRange === "week") {
+    data = mergeLive(getWeekData(timeData), live);
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - 6);
+    const ws = weekStart.toISOString().split("T")[0];
+    label = `Weekly · ${ws} to ${today}`;
+    filename = `LAPSE-weekly-${ws}.csv`;
+  } else if (currentRange === "month") {
+    data = mergeLive(getMonthData(timeData), live);
+    const d = new Date();
+    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    label = `Monthly · ${month}`;
+    filename = `LAPSE-monthly-${month}.csv`;
+  } else {
+    data = mergeLive(getYearData(timeData), live);
+    label = `Yearly · ${new Date().getFullYear()}`;
+    filename = `LAPSE-yearly-${new Date().getFullYear()}.csv`;
+  }
+
+  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  const csv =
+    `Site,Time (${label})\n` +
+    entries.map(([h, ms]) => `${h},${downloadFormatTime(ms)}`).join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `Lapse-browsing-time-${new Date().toISOString().split("T")[0]}.json`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
 });
