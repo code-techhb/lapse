@@ -1,4 +1,4 @@
-import { getHostname, todayKey } from "./utils/time.js";
+import { getHostname, todayKey, pruneOldData } from "./utils/time.js";
 
 let activeHostname = null;
 let sessionStart = null;
@@ -19,6 +19,7 @@ async function saveSession() {
     (timeData[today][activeHostname] || 0) + elapsed;
 
   await chrome.storage.local.set({ timeData });
+  sessionStart = Date.now();
 }
 
 async function startTracking(hostname) {
@@ -28,7 +29,10 @@ async function startTracking(hostname) {
   sessionStart = hostname ? Date.now() : null;
 }
 
-function scheduleMidnightAlarm() {
+async function scheduleMidnightAlarm() {
+  const existing = await chrome.alarms.get("midnightCleanup");
+  if (existing) return;
+
   const now = new Date();
   const midnight = new Date();
   midnight.setHours(24, 0, 0, 0);
@@ -38,22 +42,6 @@ function scheduleMidnightAlarm() {
     delayInMinutes: msUntilMidnight / 60000,
     periodInMinutes: 1440,
   });
-}
-
-async function cleanOldData() {
-  const result = await chrome.storage.local.get("timeData");
-  const timeData = result.timeData || {};
-
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 30);
-
-  for (const date of Object.keys(timeData)) {
-    if (new Date(date) < cutoff) {
-      delete timeData[date];
-    }
-  }
-
-  await chrome.storage.local.set({ timeData });
 }
 
 // chrome
@@ -88,9 +76,14 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
   }
 });
 
-chrome.alarms.onAlarm.addListener((alarm) => {
+chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "midnightCleanup") {
-    cleanOldData();
+    const result = await chrome.storage.local.get("timeData");
+    const pruned = pruneOldData(result.timeData || {});
+    await chrome.storage.local.set({ timeData: pruned });
+  }
+  if (alarm.name === "periodicFlush") {
+    await saveSession();
   }
 });
 
@@ -108,6 +101,19 @@ chrome.idle.onStateChanged.addListener(async (state) => {
 
 chrome.runtime.onSuspend.addListener(async () => {
   await saveSession();
+});
+
+chrome.alarms.create("periodicFlush", { periodInMinutes: 0.5 });
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === "GET_LIVE_SESSION") {
+    if (!activeHostname || !sessionStart) {
+      sendResponse({});
+      return true;
+    }
+    sendResponse({ [activeHostname]: Date.now() - sessionStart });
+    return true;
+  }
 });
 
 // init

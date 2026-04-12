@@ -17,6 +17,31 @@ export function todayKey() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+export function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
+export function downloadFormatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const mm = String(minutes).padStart(2, "0");
+  const ss = String(seconds).padStart(2, "0");
+
+  if (hours > 0) return `${hours}h ${mm}m ${ss}s`;
+  if (minutes > 0) return `${mm}m ${ss}s`;
+  return `${ss}s`;
+}
+
 export function getDayData(timeData, date = todayKey()) {
   return timeData[date] || {};
 }
@@ -71,12 +96,14 @@ export function getYearData(timeData) {
   return result;
 }
 
-export function formatTime(ms) {
-  const totalSeconds = Math.floor(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
+export function pruneOldData(timeData) {
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 1);
+  const cutoffKey = cutoff.toISOString().split("T")[0];
 
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m`;
-  return `${totalSeconds}s`;
+  const pruned = {};
+  for (const [date, data] of Object.entries(timeData)) {
+    if (date >= cutoffKey) pruned[date] = data;
+  }
+  return pruned;
 }
