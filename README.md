@@ -16,8 +16,8 @@ Built as a learning project to explore Chrome Extension APIs, service workers, a
 - ⏸️ **Smart pausing**: stops counting when you switch apps, lock your screen, or go idle
 - 📅 **Daily, weekly, monthly, yearly views** : see your habits at every scale
 - 👩🏽‍💻 **Beautiful UI** : terminal-inspired dark theme with a spring color chart
-- 📤 **Export your data** : download everything as JSON
-- 🔒 **Privacy first** : all data stored locally using chrome.storage.local, never sent anywhere
+- 📤 **Export your data** : download your stats as a CSV - daily, weekly, monthly or yearly
+- 🔒 **Privacy first** : all data stored locally using chrome.storage.local, never sent anywhere. Auto-cleared after 1 year
 
 ## ✦ Installation
 
@@ -43,7 +43,6 @@ LAPSE is not yet on the Chrome Web Store. To install it locally:
 
 - [ ] 🎨 Theme picker: amber, blue, rose variants, etc
 - [ ] 🎯 Daily time goals with alerts
-- [ ] 📊 CSV export
 - [ ] 🏪 Chrome Web Store release
 
 ## ✦ The Story Behind LAPSE
