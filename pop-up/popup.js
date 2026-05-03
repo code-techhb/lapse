@@ -142,11 +142,16 @@ async function render() {
     data = mergeLive(getMonthData(timeData), live);
   else data = mergeLive(getYearData(timeData), live);
 
-  const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  const sorted = Object.entries(data)
+    .filter(([, ms]) => ms && ms >= 1000)
+    .sort((a, b) => b[1] - a[1]);
+
   totalMs = sorted.reduce((sum, [, ms]) => sum + ms, 0);
+  const visibleSites = sorted.filter(([, ms]) => ms / totalMs >= 0.01);
+
   document.getElementById("totalTime").textContent = formatTime(totalMs);
 
-  renderChart(sorted);
+  renderChart(visibleSites);
   renderList(sorted);
 }
 
